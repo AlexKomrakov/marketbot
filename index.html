@@ -12,7 +12,7 @@
 
     });
 
-    scmBot.controller('mainController', function($scope, $http, $interval){
+    scmBot.controller('mainController', function($scope, $http, $interval, $q){
         //"http://steamcommunity.com/market/listings/570/Iceforged%20Cape"
         $scope.items = [
             {name: 'Iceforged Cape', link: 'http://steamcommunity.com/market/listings/570/Iceforged%20Cape', data: {}},
@@ -21,26 +21,38 @@
             {name: 'Starlight Bow', link: 'http://steamcommunity.com/market/listings/570/Starlight%20Bow', data: {}},
             {name: 'Spellbreaker of Yoskreth', link: 'http://steamcommunity.com/market/listings/570/Spellbreaker%20of%20Yoskreth', data: {}},
             {name: 'Jade Talon', link: 'http://steamcommunity.com/market/listings/570/Jade%20Talon', data: {}},
-            {name: "Second Disciple's Blade", link: "http://steamcommunity.com/market/listings/570/Second%20Disciple's%20Blade", data: {}}
+            {name: "Second Disciple's Blade", link: "http://steamcommunity.com/market/listings/570/Second%20Disciple's%20Blade", data: {}},
+            {name: "Helmet of the Cryogenic Embrace", link: "http://steamcommunity.com/market/listings/570/Helmet%20of%20the%20Cryogenic%20Embrace", data: {}},
+            {name: "Noriet the Dusky Guardian", link: "http://steamcommunity.com/market/listings/570/Noriet%20the%20Dusky%20Guardian", data: {}}
+
         ];
 
         $scope.data = [];
+        $scope.promises = [];
 
         $scope.query = function($item_id) {
             $scope.params = {url: $scope.url};
 
             $scope.code = null;
             $scope.response = null;
+            $scope.items[$item_id].loading = true;
 
-            $http({method: 'GET', url: 'curl.php', params: $scope.params}).
+            return $http({method: 'GET', url: 'curl.php', params: $scope.params}).
                     success(function(data, status) {
                         $scope.status = status;
                         $scope.data.push(data);
                         $scope.items[$item_id].data = data;
+                        $scope.items[$item_id].timer = 0;
+                        $scope.items[$item_id].loading = false;
+                        $scope.ballance = data.ballance;
+                        if ((data.profit-$scope.demping) > $scope.eprofit) {
+                            $scope.gotoLink($scope.items[$item_id].link);
+                        }
                     }).
                     error(function(data, status) {
                         $scope.data.push(data || "Request failed");
                         $scope.status = status;
+                        $scope.items[$item_id].loading = false;
                     });
         };
 
@@ -52,10 +64,34 @@
         $scope.parseAll = function () {
             for ($i=0; $i<$scope.items.length; $i++) {
                 $scope.url = $scope.items[$i].link;
-                $scope.query($i);
+                $scope.promises.push($scope.query($i));
+            }
+
+            $q.all($scope.promises).then(function(){
+               //console.log('success'); //Выполнены все запросы
+               $scope.promises = [];
+               if ($scope.autoparse==true) {
+                   $scope.parseAll();
+               }
+            });
+        };
+        $interval(function() {
+            for ($i=0; $i<$scope.items.length; $i++) {
+                if ($scope.items[$i].timer==null) {
+                    $scope.items[$i].timer=0;
+                } else {
+                    $scope.items[$i].timer++;
+                }
+            }
+        }, 1*1000);
+        $scope.autoParser = function () {
+            if ($scope.autoparse==false) {
+                $scope.parseAll();
             }
         };
-
+        $scope.gotoLink = function ($link) {
+            window.open($link, "_blank" );
+        }
     });
 
 </script>
@@ -63,27 +99,52 @@
 <html>
 <head>
     <title></title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body ng-app="steamMarketBot">
 
-<div ng-controller="mainController">
+    <div ng-controller="mainController">
 
-    <input type="text" ng-model="url">
+        <!--<input type="text" ng-model="url">-->
 
+        <table class="table">
+            <thead>
+                <th>#</th>
+                <th>Item name</th>
+                <th>Control</th>
+                <th>Profit</th>
+                <th>Min / recommended sell price </th>
+                <th>Last update</th>
+            </thead>
+            <tbody>
+                <tr ng-repeat="item in items" ng-class="{'success': item.data.profit-demping>eprofit, 'active': item.loading==true}">
+                    <td>{{$index+1}}</td>
+                    <td><a ng-href="{{item.link}}" target="_blank">{{item.name}}</a></td>
+                    <td><button ng-click="parse(item.link, $index)">Update</button></td>
+                    <td><span ng-show="item.data.profit!=null">{{item.data.profit-demping}}</span></td>
+                    <td>{{item.data.prices[1][1]}} / <b ng-show="item.data.prices[1][1]!=null">{{item.data.prices[1][1]-demping}}</b></td>
+                    <td>{{item.timer}}</td>
+                </tr>
+            </tbody>
+        </table>
 
+        <!--{{data}}-->
+        <button ng-click="parseAll()">Parse all</button>
+        <a href="http://steamstat.us/" target="_blank">Steam status</a><br/>
+        <br/>
+        <input ng-init="autoparse=false" type="checkbox" ng-model="autoparse" ng-click="autoParser()"> Run auto parser
+        <br/><br/>
+        <input ng-init="demping=0.1" type="text" ng-model="demping"> Demping value
+        <br/><br/>
+        <input ng-init="eprofit=0.5" type="text" ng-model="eprofit"> Expected profit
+        <br/><br/>
+        My wallet ballance: {{ballance}}
+        <!--Data: {{data}}-->
+        <button ng-click="gotoLink()">Test</button>
 
+    </div>
 
-    <ul>
-        <li ng-repeat="item in items"><a ng-href="{{item.link}}" target="_blank">{{item.name}}</a> <button ng-click="parse(item.link, $index)">Update</button> {{item.data.profit}}</li>
-    </ul>
-
-    <!--{{data}}-->
-    <button ng-click="parseAll()">Test</button>
-    <br/><br/>
-
-    Data: {{data}}
-
-</div>
-
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
 </body>
 </html>

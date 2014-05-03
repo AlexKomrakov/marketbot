@@ -25,12 +25,20 @@ $data = [
   'time' => $exectime,
   'link' => $url,
   'prices' => [],
-  'profit' => 0
+  'profit' => 0,
+  'ballance' => ""
 ];
 
 if ($result) {
     require_once 'simple_html_dom.php';
     $html = str_get_html($result);
+
+    $ballance = $html->find('[id=marketWalletBalanceAmount]');
+
+    $ballance = str_replace(",",".",$ballance[0]->innertext);
+    $ballance = floatval($ballance);
+    $data['ballance'] = $ballance;
+
     $marketItems = $html->find('span[class=market_table_value]');
 //
 //$doc = new DOMDocument('1.0', 'UTF-8');
