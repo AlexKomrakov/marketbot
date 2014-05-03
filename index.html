@@ -1,0 +1,89 @@
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.5/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.5/angular-resource.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.5/angular-route.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.5/angular-sanitize.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.5/angular-animate.min.js"></script>
+<script src="https://code.angularjs.org/1.3.0-beta.5/angular-mocks.js"></script>
+<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>-->
+<script>
+    var scmBot = angular.module('steamMarketBot', ['ngResource', 'ngAnimate']);
+
+    scmBot.factory('Curl', function($http){
+
+    });
+
+    scmBot.controller('mainController', function($scope, $http, $interval){
+        //"http://steamcommunity.com/market/listings/570/Iceforged%20Cape"
+        $scope.items = [
+            {name: 'Iceforged Cape', link: 'http://steamcommunity.com/market/listings/570/Iceforged%20Cape', data: {}},
+            {name: 'Iceforged Hair', link: 'http://steamcommunity.com/market/listings/570/Iceforged%20Hair', data: {}},
+            {name: 'Iceforged Shoulders', link: 'http://steamcommunity.com/market/listings/570/Iceforged%20Shoulders', data: {}},
+            {name: 'Starlight Bow', link: 'http://steamcommunity.com/market/listings/570/Starlight%20Bow', data: {}},
+            {name: 'Spellbreaker of Yoskreth', link: 'http://steamcommunity.com/market/listings/570/Spellbreaker%20of%20Yoskreth', data: {}},
+            {name: 'Jade Talon', link: 'http://steamcommunity.com/market/listings/570/Jade%20Talon', data: {}},
+            {name: "Second Disciple's Blade", link: "http://steamcommunity.com/market/listings/570/Second%20Disciple's%20Blade", data: {}}
+        ];
+
+        $scope.data = [];
+
+        $scope.query = function($item_id) {
+            $scope.params = {url: $scope.url};
+
+            $scope.code = null;
+            $scope.response = null;
+
+            $http({method: 'GET', url: 'curl.php', params: $scope.params}).
+                    success(function(data, status) {
+                        $scope.status = status;
+                        $scope.data.push(data);
+                        $scope.items[$item_id].data = data;
+                    }).
+                    error(function(data, status) {
+                        $scope.data.push(data || "Request failed");
+                        $scope.status = status;
+                    });
+        };
+
+        $scope.parse = function ($url, $id) {
+            $scope.url = $url;
+            $scope.query($id);
+        };
+
+        $scope.parseAll = function () {
+            for ($i=0; $i<$scope.items.length; $i++) {
+                $scope.url = $scope.items[$i].link;
+                $scope.query($i);
+            }
+        };
+
+    });
+
+</script>
+
+<html>
+<head>
+    <title></title>
+</head>
+<body ng-app="steamMarketBot">
+
+<div ng-controller="mainController">
+
+    <input type="text" ng-model="url">
+
+
+
+
+    <ul>
+        <li ng-repeat="item in items"><a ng-href="{{item.link}}" target="_blank">{{item.name}}</a> <button ng-click="parse(item.link, $index)">Update</button> {{item.data.profit}}</li>
+    </ul>
+
+    <!--{{data}}-->
+    <button ng-click="parseAll()">Test</button>
+    <br/><br/>
+
+    Data: {{data}}
+
+</div>
+
+</body>
+</html>
