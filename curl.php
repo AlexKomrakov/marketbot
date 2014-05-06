@@ -25,7 +25,6 @@ $data = [
   'time' => $exectime,
   'link' => $url,
   'prices' => [],
-  'profit' => 0,
   'ballance' => ""
 ];
 
@@ -53,7 +52,6 @@ if ($result) {
             $data['prices'][$i][] = $float;
         };
     }
-    $data['profit'] = $data['prices'][1][1] - $data['prices'][0][0];
 }
 
 echo json_encode($data);

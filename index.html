@@ -13,6 +13,9 @@
     });
 
     scmBot.controller('mainController', function($scope, $http, $interval, $q){
+
+        $scope.demping=0.25;
+        $scope.eprofit=0.75;
         //"http://steamcommunity.com/market/listings/570/Iceforged%20Cape"
         $scope.items = [
             {name: 'Iceforged Cape', link: 'http://steamcommunity.com/market/listings/570/Iceforged%20Cape', data: {}},
@@ -23,8 +26,9 @@
             {name: 'Jade Talon', link: 'http://steamcommunity.com/market/listings/570/Jade%20Talon', data: {}},
             {name: "Second Disciple's Blade", link: "http://steamcommunity.com/market/listings/570/Second%20Disciple's%20Blade", data: {}},
             {name: "Helmet of the Cryogenic Embrace", link: "http://steamcommunity.com/market/listings/570/Helmet%20of%20the%20Cryogenic%20Embrace", data: {}},
-            {name: "Noriet the Dusky Guardian", link: "http://steamcommunity.com/market/listings/570/Noriet%20the%20Dusky%20Guardian", data: {}}
-
+            {name: "Noriet the Dusky Guardian", link: "http://steamcommunity.com/market/listings/570/Noriet%20the%20Dusky%20Guardian", data: {}},
+            {name: "Red Mist Reaper's Scythe", link: "http://steamcommunity.com/market/listings/570/Red%20Mist%20Reaper%27s%20Scythe", data: {}},
+            {name: "Trophy of the Shadowcat", link: "http://steamcommunity.com/market/listings/570/Trophy%20of%20the%20Shadowcat", data: {}}
         ];
 
         $scope.data = [];
@@ -42,11 +46,20 @@
                         $scope.status = status;
                         $scope.data.push(data);
                         $scope.items[$item_id].data = data;
+                        if (!(data.prices[0][0]==0 || data.prices[1][1]==0)) {
+                            //console.log(data.prices[1][1], data.prices[0][0]);
+                            $scope.items[$item_id].data.profit = (data.prices[1][1] - data.prices[0][0]).toFixed(2);  //Calculate profit value
+                        }
                         $scope.items[$item_id].timer = 0;
                         $scope.items[$item_id].loading = false;
                         $scope.ballance = data.ballance;
-                        if ((data.profit-$scope.demping) > $scope.eprofit) {
-                            $scope.gotoLink($scope.items[$item_id].link);
+                        if (((data.profit-$scope.demping).toFixed(2)) > $scope.eprofit) {
+                            if ($scope.items[$item_id].opened!=true){
+                                $scope.gotoLink($scope.items[$item_id].link);
+                            }
+                            $scope.items[$item_id].opened = true;
+                        } else {
+                            $scope.items[$item_id].opened = false;
                         }
                     }).
                     error(function(data, status) {
@@ -117,12 +130,12 @@
                 <th>Last update</th>
             </thead>
             <tbody>
-                <tr ng-repeat="item in items" ng-class="{'success': item.data.profit-demping>eprofit, 'active': item.loading==true}">
+                <tr ng-repeat="item in items" ng-class="{'success': (item.data.profit-demping).toFixed(2)>eprofit&&item.loading!=true, 'active': item.loading==true}">
                     <td>{{$index+1}}</td>
                     <td><a ng-href="{{item.link}}" target="_blank">{{item.name}}</a></td>
                     <td><button ng-click="parse(item.link, $index)">Update</button></td>
-                    <td><span ng-show="item.data.profit!=null">{{item.data.profit-demping}}</span></td>
-                    <td>{{item.data.prices[1][1]}} / <b ng-show="item.data.prices[1][1]!=null">{{item.data.prices[1][1]-demping}}</b></td>
+                    <td><span ng-show="item.data.profit!=null">{{item.data.profit}}</span></td>
+                    <td>{{item.data.prices[1][1]}} / <b ng-show="item.data.prices[1][1]!=null">{{(item.data.prices[1][1]-demping).toFixed(2)}}</b></td>
                     <td>{{item.timer}}</td>
                 </tr>
             </tbody>
@@ -130,13 +143,14 @@
 
         <!--{{data}}-->
         <button ng-click="parseAll()">Parse all</button>
-        <a href="http://steamstat.us/" target="_blank">Steam status</a><br/>
+        <a href="http://steamstat.us/" target="_blank">Steam status</a>
+        <a href="http://steamcommunity.com/market/" target="_blank">My market</a><br/>
         <br/>
         <input ng-init="autoparse=false" type="checkbox" ng-model="autoparse" ng-click="autoParser()"> Run auto parser
         <br/><br/>
-        <input ng-init="demping=0.1" type="text" ng-model="demping"> Demping value
+        <input type="text" ng-model="demping"> Demping value
         <br/><br/>
-        <input ng-init="eprofit=0.5" type="text" ng-model="eprofit"> Expected profit
+        <input type="text" ng-model="eprofit"> Expected profit
         <br/><br/>
         My wallet ballance: {{ballance}}
         <!--Data: {{data}}-->
